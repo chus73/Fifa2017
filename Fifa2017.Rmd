@@ -1,0 +1,122 @@
+---
+title: "Preprocesado de datos del Fifa 2017"
+author: "Jesús González"
+date: "8/3/2021"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    number_sections: true
+    theme: paper
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Carga del archivo
+
+```{r}
+fifa.df <- read.csv(file="fifa_raw.csv", encoding = "UTF-8")
+paste0("Número de observaciones: ", nrow(fifa.df))
+paste0("Número de variables: ", ncol(fifa.df))
+```
+
+Realizamos un subset con las variables escogidas para el estudio.
+
+```{r}
+col_names <- c("Name", "Nationality", "Club_Joining", "Contract_Expiry", "Rating", "Height", "Weight", "Preffered_Foot", "Birth_Date", "Age", "Work_Rate")
+fifa.df.sub <- fifa.df[, col_names]
+paste0("Número de observaciones: ", nrow(fifa.df.sub))
+paste0("Número de variables: ", ncol(fifa.df.sub))
+```
+
+Se ha pasado de 54 variables a 11, manteniendo el número de observaciones. A continuación se muestran las 5 primeras observaciones de la muestra.
+
+```{r}
+head(fifa.df.sub,5)
+```
+
+Vamos a examinar cada una de las variables.
+
+```{r}
+summary(fifa.df.sub)
+```
+
+De la observación de las características de las variables y de las cinco primera observaciones podemos ver los siguiente:
+
+1.  Contract_Expiry: Presenta como mínimo un valor NA.
+
+2.  Preffered_Foot: Contiene valores 1,2 que se tendrán que traducir en Left y Right respectivamente.
+
+3.  En las variables numéricas, a excepción de la anterior en la que carece de sentido, la media y la mediana tienen valores similares, que indica poca presencia de Outliers.
+
+4.  Las variables Height and Weight presentan valores NA que tendrán que ser tratados.
+
+# Verificar la dupliación de registros
+
+En esta sección se realizará la comprobación de existencia de observaciones duplicadas en la muestra. Utilizaremos la variable con el nombre del jugador, como criterio para considerar que un registro se duplica.
+
+```{r}
+if (length(unique(fifa.df.sub$Name)) != nrow(fifa.df.sub)){
+  paste("Tenemos", (nrow(fifa.df.sub) - length(unique(fifa.df.sub$Name))), "jugadores duplicados.")
+}
+```
+
+Vamos a mostrar algunos de los duplicados.
+
+```{r}
+head(fifa.df.sub[duplicated(fifa.df.sub$Name),], 10)
+
+```
+
+Si escogemos uno aleatoriamente, por ejemplo el jugador "Fernando".
+
+```{r}
+fifa.df.sub[fifa.df.sub$Name == "Fernando",]
+```
+
+Podemos ver comparando el resto de variables que muestra a tres jugadores diferentes. Como es lógico pensar que Fernando es un nombre común, vamos a probar con otro como "Lisandro López".
+
+```{r}
+fifa.df.sub[fifa.df.sub$Name == "Lisandro López",]
+```
+
+Viendo por el resultado, que también estamos hablando de dos jugadores con variables diferentes.
+
+Por todo lo visto, a priori [no parece que existan observaciones duplicadas en la muestra]{.ul}.
+
+# Normalización de los datos cuantitativos
+
+## Rating
+
+## Height
+
+## Weight
+
+# Normalización de los datos caualitativos
+
+## Name y Nationality
+
+## Preffered_Foot
+
+## Work_Rate
+
+# Posibles inconsistencias y variables tipo fecha
+
+## Club_Joining
+
+## Contract_Expiry \>= Club_Joining?
+
+## Revisar si la edad corresponde a la fecha de nacimiento
+
+# Valores atípicos
+
+# Imputación de valores
+
+# Estudio descriptivo de las variables cuantitativas
+
+# Análisis de Componentes Principales (ACP)
+
+# Archivo final
