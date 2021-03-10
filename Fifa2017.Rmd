@@ -13,14 +13,18 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+#install.packages("tidyverse")
+#library(tidyverse)
+library(stringr)
+library(dplyr)
 ```
 
 # Carga del archivo
 
 ```{r}
 fifa.df <- read.csv(file="fifa_raw.csv", encoding = "UTF-8")
-paste0("Número de observaciones: ", nrow(fifa.df))
-paste0("Número de variables: ", ncol(fifa.df))
+paste0("Número de observaciones: ", nrow(fifa.df),". Número de variables: ", ncol(fifa.df))
 ```
 
 Realizamos un subset con las variables escogidas para el estudio.
@@ -28,8 +32,7 @@ Realizamos un subset con las variables escogidas para el estudio.
 ```{r}
 col_names <- c("Name", "Nationality", "Club_Joining", "Contract_Expiry", "Rating", "Height", "Weight", "Preffered_Foot", "Birth_Date", "Age", "Work_Rate")
 fifa.df.sub <- fifa.df[, col_names]
-paste0("Número de observaciones: ", nrow(fifa.df.sub))
-paste0("Número de variables: ", ncol(fifa.df.sub))
+paste0("Número de observaciones: ", nrow(fifa.df.sub),". Número de variables: ", ncol(fifa.df.sub))
 ```
 
 Se ha pasado de 54 variables a 11, manteniendo el número de observaciones. A continuación se muestran las 5 primeras observaciones de la muestra.
@@ -54,13 +57,13 @@ De la observación de las características de las variables y de las cinco prime
 
 4.  Las variables Height and Weight presentan valores NA que tendrán que ser tratados.
 
-# Verificar la dupliación de registros
+# Verificar la duplicación de registros
 
 En esta sección se realizará la comprobación de existencia de observaciones duplicadas en la muestra. Utilizaremos la variable con el nombre del jugador, como criterio para considerar que un registro se duplica.
 
 ```{r}
 if (length(unique(fifa.df.sub$Name)) != nrow(fifa.df.sub)){
-  paste("Tenemos", (nrow(fifa.df.sub) - length(unique(fifa.df.sub$Name))), "jugadores duplicados.")
+  paste("Tenemos", (nrow(fifa.df.sub) - length(unique(fifa.df.sub$Name))), "posibles registros duplicados.")
 }
 ```
 
@@ -71,7 +74,7 @@ head(fifa.df.sub[duplicated(fifa.df.sub$Name),], 10)
 
 ```
 
-Si escogemos uno aleatoriamente, por ejemplo el jugador "Fernando".
+Si escogemos uno aleatóriamente, por ejemplo el jugador "Fernando".
 
 ```{r}
 fifa.df.sub[fifa.df.sub$Name == "Fernando",]
@@ -85,15 +88,123 @@ fifa.df.sub[fifa.df.sub$Name == "Lisandro López",]
 
 Viendo por el resultado, que también estamos hablando de dos jugadores con variables diferentes.
 
-Por todo lo visto, a priori [no parece que existan observaciones duplicadas en la muestra]{.ul}.
+Tras lo visto, no podemos confirmar que [existan observaciones duplicadas en la muestra]{.ul}.
 
 # Normalización de los datos cuantitativos
 
+En este apartado se va a realizar la normalización de la variables cuantitativas con objeto de uniformizar su formato.
+
 ## Rating
+
+La variable numérica *rating*, incluye la valoración del jugador dentro de un rango entre 0 y 100. Un vistazo a sus valores máximos y mínimo nos puede mostrar si están dentro del rango esperado.
+
+```{r}
+str(fifa.df.sub$Rating)
+summary(fifa.df.sub$Rating)[c(1,6)]
+```
 
 ## Height
 
+La variable que muestra la altura de los jugadores, height, debe de estar en cm con un formato de 3 dígitos sin decimales.
+
+```{r}
+head(fifa.df.sub$Height,20)
+```
+
+Vemos que hay observaciones con medidas en centímetros, y otras en metros. Eliminaremos la unidad que aparece al final
+
+```{r}
+fifa.df.sub$Height <- str_replace_all(fifa.df.sub$Height, "[cm]", "")
+head(fifa.df.sub$Height, 20)
+```
+
+Conseguimos trasformar las medidas de metros a centímetros eliminando la coma y aplicando una función que elimina los espacios en blanco iniciales y finales.
+
+```{r}
+fifa.df.sub$Height <- trimws(str_replace(fifa.df.sub$Height, "[,]", ""))
+head(fifa.df.sub$Height, 20)
+```
+
+Como paso de comprobación, vamos a ver si existe alguna medida cuya longitud sea superior a 3 dígitos.
+
+```{r}
+tail(fifa.df.sub[nchar(fifa.df.sub$Height)>3, c("Height")])
+```
+
+Apareciendo los NA que trataremos más adelante.
+
+En último lugar, transformaremos la medida a numérico.
+
+```{r}
+fifa.df.sub$Height <- as.numeric(fifa.df.sub$Height)
+str(fifa.df.sub$Height)
+```
+
 ## Weight
+
+La última variable numérica muestra el peso de los jugadores y debe de estar expresada en kg con 2 dígitos decimales. Los pasos son similares a la variable Height. Esta vez, vamos a realizar la transformación haciendo uso de pipes para concatenar pasos.
+
+```{r}
+str(fifa.df.sub$Weight)
+```
+
+De la observación de los primeros registro, podemos ver que la variable se encuentra en formato de string, y que contiene la unidad de medida kg o gramos. Los valores están expresados con tres decimales que deberemos de reducir a dos. Además, en las observaciones dadas en kg, podemos encontrar que el separador decimal es el punto o bien la coma.
+
+Primeramente vamos a diferenciar las medidas de gramos del resto, para poder operar con ellas posteriormente.
+
+```{r}
+  fifa.df.sub <-  fifa.df.sub %>% 
+    mutate(Weight_Unit = ifelse(str_detect(Weight, "gr"),"gr",""))
+  fifa.df.sub[1:10, c("Weight", "Weight_Unit")]
+```
+
+A continuación vamos a realizar los siguientes pasos encadenados:
+
+1.  Eliminación de la unidad en la variable Weight.
+
+2.  Eliminación de los espacios en blanco en cada observación de la variable.
+
+3.  Sustitución de las comas por los puntos como separadores decimales.
+
+4.  Conversión de la variable en Numérica.
+
+5.  Añadir el resultado en una nueva columna, "Weight2", que nos permitirá poder comparar con la columna original.
+
+```{r}
+  fifa.df.sub$Weight2 <-   
+  fifa.df.sub$Weight %>% str_replace_all(c(","=".",  "kg"="", "gr"="")) %>% trimws() %>% as.numeric() 
+fifa.df.sub[1:10, c("Weight", "Weight_Unit", "Weight2")]
+```
+
+El siguiente paso es utilizar la columna Weight_Unit para convertir los valores en gramos a kilos.
+
+```{r}
+gr_to_kg <- function(value, unit){
+  if (is.na(unit)==FALSE) {
+    if (unit == "gr") {
+      tmp <- value/1000
+    }
+    else{
+      tmp <- value
+    }
+    return(signif(tmp, digits = nchar(tmp)- 2))
+  }
+  else
+  {return(NA)}
+}
+for(i in 1:nrow(fifa.df.sub)){
+  fifa.df.sub[i,"Weight2"] <- gr_to_kg(fifa.df.sub[i,"Weight2"], fifa.df.sub[i,"Weight_Unit"])
+}
+
+```
+
+Para finalizar, borramos las columnas que ya no no sirven.
+
+```{r}
+fifa.df.sub <- subset(fifa.df.sub, select = -c(Weight, Weight_Unit))
+fifa.df.sub <- fifa.df.sub %>% rename(Weight = Weight2)
+head(fifa.df.sub)
+```
 
 # Normalización de los datos caualitativos
 
