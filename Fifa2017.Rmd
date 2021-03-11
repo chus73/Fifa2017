@@ -198,19 +198,51 @@ for(i in 1:nrow(fifa.df.sub)){
 
 ```
 
-Para finalizar, borramos las columnas que ya no no sirven.
+Para finalizar, borramos las columnas que ya no nos sirven.
+
+A modo de comprobación, nos fijamos en los valores extremos de la serie y en el formato que nos devuelve.
 
 ```{r}
 fifa.df.sub <- subset(fifa.df.sub, select = -c(Weight, Weight_Unit))
 fifa.df.sub <- fifa.df.sub %>% rename(Weight = Weight2)
-head(fifa.df.sub)
+summary(fifa.df.sub$Weight)
 ```
 
-# Normalización de los datos caualitativos
+# Normalización de los datos caulitativos
 
 ## Name y Nationality
 
+Si examinamos la variable Name, podemos comprobar que algunos de sus valores presentan espacios en blanco. Además de no tener una uniformidad con respecto al uso de mayúsculas, tal y como podemos ver a continuación.
+
+```{r}
+filas <- c(314, 973, 998, 794)
+fifa.df.sub[filas, "Name"]
+```
+
+Aplicamos la limpieza y normalización al campo Name y al Nacionality.
+
+```{r}
+fifa.df.sub$Name <- fifa.df.sub$Name %>% trimws() %>% str_to_title()
+fifa.df.sub$Nationality <- fifa.df.sub$Nationality %>% trimws() %>% str_to_title()
+fifa.df.sub[filas, c("Name", "Nationality")]
+```
+
 ## Preffered_Foot
+
+La variable preffered_foot contiene dos identificadores numéricos que tienen la siguiente correspondencia:
+
+-   1 -\> Left
+
+-   2 -\> Right
+
+Vamos a realizar una transformación de la variable a tipo factor con los atributos descritos.
+
+```{r}
+str(fifa.df.sub$Preffered_Foot)
+fifa.df.sub$Preffered_Foot <- factor(fifa.df.sub$Preffered_Foot)
+levels(fifa.df.sub$Preffered_Foot) <- c("Left", "Right")
+str(fifa.df.sub$Preffered_Foot)
+```
 
 ## Work_Rate
 
