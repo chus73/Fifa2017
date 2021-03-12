@@ -246,6 +246,27 @@ str(fifa.df.sub$Preffered_Foot)
 
 ## Work_Rate
 
+Examinamos la variable Work_Rate. Como se puede observar a continuación, muestra dos valores de tipo string, el primer valor como la valoración cualitativa en ataque y el segundo en defensa.
+
+```{r}
+unique(fifa.df.sub$Work_Rate)
+```
+
+De la observación de los valores que presenta la variable, podemos ver que no hay uniformidad entre ellos, presentando abreviaturas, como por ejemplo Hig y Med para High y Medium.
+
+```{r}
+fifa.df.sub[fifa.df.sub$Work_Rate == 'Med / Med', 'Work_Rate'] = 'Medium / Medium'
+fifa.df.sub[fifa.df.sub$Work_Rate == 'Hig / Med', 'Work_Rate'] = 'High / Medium'
+unique(fifa.df.sub$Work_Rate)
+```
+
+Una vez obtenidas las nueve combinaciones válidas, podemos transformar a factor.
+
+```{r}
+fifa.df.sub$Work_Rate = factor(fifa.df.sub$Work_Rate)
+unique(fifa.df.sub$Work_Rate)
+```
+
 # Posibles inconsistencias y variables tipo fecha
 
 ## Club_Joining
