@@ -18,6 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #library(tidyverse)
 library(stringr)
 library(dplyr)
+library(lubridate)
 ```
 
 # Carga del archivo
@@ -257,23 +258,88 @@ De la observación de los valores que presenta la variable, podemos ver que no h
 ```{r}
 fifa.df.sub[fifa.df.sub$Work_Rate == 'Med / Med', 'Work_Rate'] = 'Medium / Medium'
 fifa.df.sub[fifa.df.sub$Work_Rate == 'Hig / Med', 'Work_Rate'] = 'High / Medium'
-unique(fifa.df.sub$Work_Rate)
+summary(fifa.df.sub$Work_Rate)
 ```
 
-Una vez obtenidas las nueve combinaciones válidas, podemos transformar a factor.
+Una vez obtenidas las nueve combinaciones válidas, podemos transformar la variable a factor.
 
 ```{r}
 fifa.df.sub$Work_Rate = factor(fifa.df.sub$Work_Rate)
-unique(fifa.df.sub$Work_Rate)
+str(fifa.df.sub$Work_Rate)
 ```
 
 # Posibles inconsistencias y variables tipo fecha
 
 ## Club_Joining
 
+La variable Club_Joining tiene que estar dentro del rango: 1990 a 2017. Al examinarla, vemos que el tipo de datos es literal.
+
+```{r}
+str(fifa.df.sub$Club_Joining)
+
+
+```
+
+Así que el siguiente paso será transformar su tipo a fecha, tal y como le corresponde.
+
+```{r}
+str(fifa.df.sub[, "Club_Joining"])
+fifa.df.sub$Club_Joining = dmy( fifa.df.sub[, "Club_Joining"])
+str(fifa.df.sub[, "Club_Joining"])
+```
+
+Una vez convertida la variable, vamos a comprobar si existen fechas fuera de rango
+
+```{r}
+summary(fifa.df.sub[year(fifa.df.sub$Club_Joining) <= 1990 || year(fifa.df.sub$Club_Joining) > 2017, "Club_Joining"])
+```
+
+Viendo que todas las fechas se encuentran dentro del rango.
+
 ## Contract_Expiry \>= Club_Joining?
 
+En este apartado, vamos a mirar si se cumple **la regla de integridad** de que no exista ningún jugador cuyo año de expiración de contrato sea inferior al año de inicio del contrato. Lo ideal hubiera sido poder comparar a nivel de fechas, pero en nuestro caso, la variable *Contract_Expiry* **sólo recoge el año**. De todas maneras, teniendo en cuenta que los jugadores son renovados por temporadas, la afectación de no bajar a máxima granularidad no tiene que ser importante.
+
+```{r}
+nrow(na.omit(fifa.df.sub[fifa.df.sub$Contract_Expiry < year(fifa.df.sub$Club_Joining), c("Club_Joining", "Contract_Expiry")]))
+```
+
+No encontrándose ningún caso.
+
 ## Revisar si la edad corresponde a la fecha de nacimiento
+
+Vamos a verificar que la variable Age, a fecha 01/01/2017 tiene su correspondencia con la que incorpora el registro en la variable Birth_Date. Primero de todo, si examinamos esta última variable, encontramos que tenemos que realizar una transformación de tipo de datos de litaral a fecha (casting).
+
+```{r}
+str(fifa.df.sub$Birth_Date)
+fifa.df.sub$Birth_Date <- dmy(fifa.df.sub$Birth_Date)
+print('')
+str(fifa.df.sub$Birth_Date)
+```
+
+Ahora que ya tenemos la variable en su formato correcto, podemos calcular la edad en el primer día del año 2017 y compararla con la almacenada.
+
+```{r}
+current_date <- ymd(20170101)
+fifa.df.sub$Calculated_Age <- fifa.df.sub %>% 
+  mutate(Calculated_Age = trunc(as.numeric(as.period(interval(fifa.df.sub$Birth_Date, current_date)), unit="year"), "year")) %>% 
+  select("Calculated_Age")
+fifa.df.sub[1:10, c("Name", "Birth_Date", "Age", "Calculated_Age")]
+```
+
+En los casos en los que no tenemos año de nacimiento, la fórmula no ha podido calcular la diferencia de tiempo. En otros casos, como por ejemplo el primer registro, vemos que la edad calculada difiere de la edad almacenada en 1 dígito. Este resultado podría ser debido a si emplearon redondeo en el cálculo de la edad (nosotros hemos truncado la cifra a su parte entrena), o si utilizaron una fecha diferente al primero de enero del 2017. En todo caso, vamos a revisar cuantas observaciones se ven afectadas por la diferencia entre la edad calculada y la almacenada.
+
+```{r}
+head(na.omit(fifa.df.sub[fifa.df.sub$Calculated_Age!=fifa.df.sub$Age, c("Name", "Birth_Date", "Age", "Calculated_Age")]))
+paste("Número de registros con Edad diferente: ", nrow(na.omit(fifa.df.sub[fifa.df.sub$Calculated_Age!=fifa.df.sub$Age, c("Name", "Age", "Calculated_Age")])))
+```
+
+Vamos a actualizar la variable Age con los valores calculados.
+
+```{r}
+fifa.df.sub$fifa.df.sub[1:10, c("Name", "Birth_Date", "Age", "Calculated_Age")]
+Age <- ifelse((fifa.df.sub$Calculated_Age!=fifa.df.sub$Age) & (!is.na(fifa.df.sub$Calculated_Age)), fifa.df.sub$Calculated_Age, fifa.df.sub$Age)
+```
 
 # Valores atípicos
 
