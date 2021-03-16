@@ -321,9 +321,8 @@ Ahora que ya tenemos la variable en su formato correcto, podemos calcular la eda
 
 ```{r}
 current_date <- ymd(20170101)
-fifa.df.sub$Calculated_Age <- fifa.df.sub %>% 
-  mutate(Calculated_Age = trunc(as.numeric(as.period(interval(fifa.df.sub$Birth_Date, current_date)), unit="year"), "year")) %>% 
-  select("Calculated_Age")
+fifa.df.sub<- fifa.df.sub %>% 
+  mutate(Calculated_Age = trunc(as.numeric(as.period(interval(fifa.df.sub$Birth_Date, current_date)), unit="year"), "year"))
 fifa.df.sub[1:10, c("Name", "Birth_Date", "Age", "Calculated_Age")]
 ```
 
@@ -337,8 +336,27 @@ paste("Número de registros con Edad diferente: ", nrow(na.omit(fifa.df.sub[fifa
 Vamos a actualizar la variable Age con los valores calculados.
 
 ```{r}
-fifa.df.sub$fifa.df.sub[1:10, c("Name", "Birth_Date", "Age", "Calculated_Age")]
-Age <- ifelse((fifa.df.sub$Calculated_Age!=fifa.df.sub$Age) & (!is.na(fifa.df.sub$Calculated_Age)), fifa.df.sub$Calculated_Age, fifa.df.sub$Age)
+fifa.df.sub[1:10, c("Name", "Birth_Date", "Age", "Calculated_Age")]
+
+#fifa.df.sub$Age2 <-fifa.df.sub$Age
+#fifa.df.sub[fifa.df.sub$Calculated_Age!=fifa.df.sub$Age & !is.na(fifa.df.sub$Calculated_Age), "Age2"] = fifa.df.sub$Calculated_Age
+real_age <- function(age1, age2){
+  if (age1 != age2 & !is.na(age2)) {
+    return(age2)
+  } else {
+    return(age1)
+  }
+}
+for(i in 1:nrow(fifa.df.sub)){
+  fifa.df.sub[i,"Age"] <- real_age(fifa.df.sub[i,"Age"], fifa.df.sub[i,"Calculated_Age"])
+}
+fifa.df.sub[1:10, c("Name", "Birth_Date", "Age", "Calculated_Age")]
+```
+
+Ya hemos conseguido actualizar la variable Age con los valores calculados para aquellos casos en los que eran diferentes y existían valores. Es el momento de borrar la columna temporal Calculated_Age que nos ha servido para el cálculo.
+
+```{r}
+fifa.df.sub <- select(fifa.df.sub, -Calculated_Age)
 ```
 
 # Valores atípicos
