@@ -19,6 +19,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(stringr)
 library(dplyr)
 library(lubridate)
+library(ggplot2)
 ```
 
 # Carga del archivo
@@ -112,6 +113,12 @@ La variable que muestra la altura de los jugadores, height, debe de estar en cm 
 head(fifa.df.sub$Height,20)
 ```
 
+Además, tenemos que tener especial cuidado debido a que las medidas en metros, no cumplen con una homegeneidad de formato, como se puede ver en el siguiente registro
+
+```{r}
+fifa.df[29,c("Name", "Height")]
+```
+
 Vemos que hay observaciones con medidas en centímetros, y otras en metros. Eliminaremos la unidad que aparece al final
 
 ```{r}
@@ -134,11 +141,18 @@ tail(fifa.df.sub[nchar(fifa.df.sub$Height)>3, c("Height")])
 
 Apareciendo los NA que trataremos más adelante.
 
-En último lugar, transformaremos la medida a numérico.
+El siguiente paso será transformar la medida a numérico.
 
 ```{r}
 fifa.df.sub$Height <- as.numeric(fifa.df.sub$Height)
 str(fifa.df.sub$Height)
+```
+
+Por último, acabaremos de ajustar aquellas observaciones que originalmente carecían de los dos decimales.
+
+```{r}
+fifa.df.sub$Height <- ifelse(nchar(fifa.df.sub$Height) == 1, fifa.df.sub$Height*100, ifelse(nchar(fifa.df.sub$Height) == 2, fifa.df.sub$Height*10, fifa.df.sub$Height))
+fifa.df.sub[29, c("Name", "Height")]
 ```
 
 ## Weight
@@ -313,7 +327,7 @@ Vamos a verificar que la variable Age, a fecha 01/01/2017 tiene su correspondenc
 ```{r}
 str(fifa.df.sub$Birth_Date)
 fifa.df.sub$Birth_Date <- dmy(fifa.df.sub$Birth_Date)
-print('')
+
 str(fifa.df.sub$Birth_Date)
 ```
 
@@ -360,6 +374,34 @@ fifa.df.sub <- select(fifa.df.sub, -Calculated_Age)
 ```
 
 # Valores atípicos
+
+Vamos a revisar si existen valores atípicos para la variables Height.
+
+```{r}
+boxplot(fifa.df.sub$Height, main = "Height", color= "gray")
+```
+
+Tanto el bloxplot de la variable Height, como de la Weight nos marcan valores fuera del 1. 5 intercuartil que podríamos considerar outliers (!). En concreto, si nos fijamos en la variable Height, podemos ver que corresponden a la siguiente lista.
+
+```{r}
+boxplot.stats(fifa.df.sub$Height)$out %>% unique() %>% sort()
+summary(fifa.df.sub$Height)
+```
+
+Aunque la media es una medida de tendencia central que se ve fuertemente influenciada por los valores extremos, en este caso, vemos que media y mediana prácticamente coinciden. Por esa razón, no parece indicado la eliminación de los valores extremos encontrados por el bloxplot.
+
+El paso siguiente será repetir la búsqueda de outliers para la variable Weight
+
+```{r}
+boxplot(fifa.df.sub$Weight, main = "Weight", color= "gray")
+```
+
+```{r}
+boxplot.stats(fifa.df.sub$Weight)$out %>% unique() %>% sort()
+summary(fifa.df.sub$Weight)
+```
+
+En este caso, la desviación entre media y mediana es también pequeño (menos de un 0.4 %), **no justificándose la eliminación** de los valores extremos de la serie numérica.
 
 # Imputación de valores
 
