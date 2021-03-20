@@ -112,6 +112,8 @@ str(fifa.df.sub$Rating)
 summary(fifa.df.sub$Rating)[c(1,6)]
 ```
 
+Viendo que todos sus valores se encuentran dentro del intervalo correcto.
+
 ## Height
 
 La variable que muestra la altura de los jugadores, height, debe de estar en cm con un formato de 3 dígitos sin decimales.
@@ -159,6 +161,10 @@ Por último, acabaremos de ajustar aquellas observaciones que originalmente care
 
 ```{r}
 fifa.df.sub$Height <- ifelse(nchar(fifa.df.sub$Height) == 1, fifa.df.sub$Height*100, ifelse(nchar(fifa.df.sub$Height) == 2, fifa.df.sub$Height*10, fifa.df.sub$Height))
+
+```
+
+```{r}
 fifa.df.sub[29, c("Name", "Height")]
 ```
 
@@ -330,7 +336,11 @@ En este apartado, vamos a mirar si se cumple **la regla de integridad** de que n
 nrow(na.omit(fifa.df.sub[fifa.df.sub$Contract_Expiry < year(fifa.df.sub$Club_Joining), c("Club_Joining", "Contract_Expiry")]))
 ```
 
-No encontrándose ningún caso.
+No encontrándose ningún caso. Lo que si que encontramos es un registro con valor desconocido que sería interesante tratar.
+
+```{r}
+fifa.df.sub[is.na(fifa.df.sub$Contract_Expiry)== TRUE, ]
+```
 
 ## Revisar si la edad corresponde a la fecha de nacimiento
 
@@ -424,6 +434,13 @@ En este capítulo vamos a inferir los valores desconocidos de las variables Heig
 Examinemos primero los valores desconocidos de la serie.
 
 ```{r}
+gamer_na_height <- fifa.df.sub[is.na(fifa.df.sub$Height) == TRUE, 'ID']
+fifa.df.sub[gamer_na_height, c("Name", "Height")]
+```
+
+Para inferir los valores desconocidos, vamos a utilizar un modelo de regresión lineal, utilizando la variable peso como variable conocida.
+
+```{r}
 fmla <- fifa.df.sub$Height ~ fifa.df.sub$Weight
 lineal.model <- lm(fmla, data = fifa.df.sub)
 lineal.model
@@ -448,7 +465,7 @@ ggplot(fifa.df.sub, aes(x = pred.Height, y = Height)) +
   ggtitle("Predicción del Peso del jugador")
 ```
 
-Examinamos el resultado de la predicción para los jugadores con valores de altura desconocidos.
+Examinamos el resultado de la predicción para los jugadores con valores de altura desconocidos. Hemos de aplicar el mismo formato numérico, sin decimales, que ya aplicamos en su momento a los valores originales.
 
 ```{r}
 fifa.df.sub[is.na(fifa.df.sub$Height), c("Name", "Height", "pred.Height")]
@@ -457,13 +474,24 @@ fifa.df.sub[is.na(fifa.df.sub$Height), c("Name", "Height", "pred.Height")]
 Por último, vamos a actualizar la variable de altura con los nuevos valores inferidos.
 
 ```{r}
-fifa.df.sub[is.na(fifa.df.sub$Height), "Height"] <- fifa.df.sub[is.na(fifa.df.sub$Height), "pred.Height"]
+fifa.df.sub[is.na(fifa.df.sub$Height), "Height"] <- trunc(fifa.df.sub[is.na(fifa.df.sub$Height), "pred.Height"])
 paste("Número de filas con altura desconocida: ", nrow(fifa.df.sub[is.na(fifa.df.sub$Height),]))
+```
+
+Mostramos los valores resultantes.
+
+```{r}
+
 ```
 
 ## Inferir Weight a partir de Height
 
-A continuación, realizaremos la predicción del peso a partir de la altura del jugador, siguiendo el esquema utilizado en el apartado anterior.
+A continuación, realizaremos la predicción del peso a partir de la altura del jugador, siguiendo el esquema utilizado en el apartado anterior. Previamente, vamos a registrar las observaciones afectadas.
+
+```{r}
+gamer_na_weight <- fifa.df.sub[is.na(fifa.df.sub$Weight) == TRUE, 'ID']
+fifa.df.sub[gamer_na_weight, c("Name", "Weight")]
+```
 
 ```{r}
 fmla <- fifa.df.sub$Weight ~ fifa.df.sub$Height
@@ -478,14 +506,54 @@ fifa.df.sub$pred.Weight <- predict(lineal.model, fifa.df.sub)
 fifa.df.sub[is.na(fifa.df.sub$Weight), c("Name", "Weight", "pred.Weight")]
 ```
 
-Por ultimo, vamos a actualizar la variable peso, eliminando los valores desconocidos, y eliminando la variable de predicción.
+El siguiente paso que daremos será actualizar la variable del peso del jugador que presenta valores desconocidos con las predicciones encontradas. Estas predicciones se tienen que adaptar al formato de los datos de origen. Para ello, truncaremos el valor quedándonos con la parte entera.
 
 ```{r}
-fifa.df.sub[is.na(fifa.df.sub$Weight), "Weight"] <- fifa.df.sub[is.na(fifa.df.sub$Weight), "pred.Weight"]
+fifa.df.sub[is.na(fifa.df.sub$Weight), "Weight"] <- trunc(fifa.df.sub[is.na(fifa.df.sub$Weight), "pred.Weight"])
+fifa.df.sub[gamer_na_weight, c("Name", "Weight", "pred.Weight")]
+```
+
+Como última comprobación, miraremos que las dos variables tratadas, Height y Weight, están libres de valores desconocidos, para finalmente, eliminar del modelo de datos las dos variables de predicción utilizadas y que ya no aportan nada al modelo.
+
+```{r}
 paste("Número de filas con peso desconocido: ", nrow(fifa.df.sub[is.na(fifa.df.sub$Weight),]))
+paste("Número de filas con altura desconocida: ", nrow(fifa.df.sub[is.na(fifa.df.sub$Height),]))
+fifa.df.sub[, c("pred.Weight", "pred.Height")] <- NULL
 ```
 
 # Estudio descriptivo de las variables cuantitativas
+
+En este capítulo, vamos a realizar el estudio de las variables cuantitativas visualizando sus medidas de tendencia centrales.
+
+```{r}
+str(fifa.df.sub)
+```
+
+```{r}
+{r}
+col_names <- c('Contract_Expiry', 'Rating', 'Height', 'Age', 'Weight')
+col_names
+```
+
+La variable Contract_Expiry, aunque se encuentra en formato numérico, no debemos olvidar que corresponde a un año y por tanto, su naturaleza es ser parte de una fecha. Por otro lado, es una variable que cuenta con un valor desconocido, que nos obliga a tratarlo para poder realizar el estudio. Podríamos optar por eliminar el registro, o no tenerlo en cuenta para este estudio dado que corresponde a una sola observación entre 17588, pero estaríamos perdiendo información relevante de este jugador. Por ello, considero más práctico inferir la media de la población, asumiendo el riesgo de introducir un dato por criterios estadísticos, que no se corresponderá con la realidad.
+
+```{r}
+fifa.df.sub[is.na(fifa.df.sub$Contract_Expiry)== TRUE, "Contract_Expiry"] = 
+round(mean(fifa.df.sub[is.na(fifa.df.sub$Contract_Expiry)== FALSE, "Contract_Expiry"] ),0)
+```
+
+```{r}
+quantitative_study <- function(df, col_names) {
+  media <- as.data.frame(lapply(df[, col_names], mean)) %>% mutate(estimator=c("media"))
+  mediana <- as.data.frame(lapply(df[, col_names], median)) %>% mutate(estimator=c("mediana"))
+  return(merge(media, mediana, all=TRUE))
+}
+  
+
+```
+
+```{}
+```
 
 # Análisis de Componentes Principales (ACP)
 
