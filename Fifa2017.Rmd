@@ -20,6 +20,19 @@ library(stringr)
 library(dplyr)
 library(lubridate)
 library(ggplot2)
+
+# Winsor package
+# https://www.rdocumentation.org/packages/psych/versions/2.0.12/topics/winsor
+# install.packages('psych')
+library(psych)
+
+# ggbiplot package
+# https://www.rdocumentation.org/packages/ggbiplot/versions/0.55
+# https://www.rdocumentation.org/packages/ggbiplot/versions/0.55/topics/ggbiplot
+library(devtools)
+#install_github("vqv/ggbiplot")
+library(ggbiplot)
+
 ```
 
 # Carga del archivo
@@ -237,7 +250,8 @@ A modo de comprobación, nos fijamos en los valores extremos de la serie y en el
 
 ```{r}
 fifa.df.sub <- subset(fifa.df.sub, select = -c(Weight, Weight_Unit))
-fifa.df.sub <- fifa.df.sub %>% rename(Weight = Weight2)
+names(fifa.df.sub)[names(fifa.df.sub) == 'Weight2'] <- 'Weight'
+#fifa.df.sub <- fifa.df.sub %>% rename(Weight = Weight2)
 summary(fifa.df.sub$Weight)
 ```
 
@@ -297,8 +311,9 @@ Una vez obtenidas las nueve combinaciones válidas, podemos transformar la varia
 
 ```{r}
 fifa.df.sub$Work_Rate = factor(fifa.df.sub$Work_Rate)
-str(fifa.df.sub$Work_Rate)
+levels(fifa.df.sub$Work_Rate)
 ```
+Encontrando las 9 posibles combinaciones para esta variable.
 
 # Posibles inconsistencias y variables tipo fecha
 
@@ -398,6 +413,7 @@ fifa.df.sub <- select(fifa.df.sub, -Calculated_Age)
 # Valores atípicos
 
 Vamos a revisar si existen valores atípicos para la variables Height.
+
 
 ```{r}
 boxplot(fifa.df.sub$Height, main = "Height", color= "gray")
@@ -525,17 +541,15 @@ fifa.df.sub[, c("pred.Weight", "pred.Height")] <- NULL
 
 En este capítulo, vamos a realizar el estudio de las variables cuantitativas visualizando sus medidas de tendencia centrales.
 
-```{r}
-str(fifa.df.sub)
+```{}
 ```
 
 ```{r}
-{r}
 col_names <- c('Contract_Expiry', 'Rating', 'Height', 'Age', 'Weight')
 col_names
 ```
 
-La variable Contract_Expiry, aunque se encuentra en formato numérico, no debemos olvidar que corresponde a un año y por tanto, su naturaleza es ser parte de una fecha. Por otro lado, es una variable que cuenta con un valor desconocido, que nos obliga a tratarlo para poder realizar el estudio. Podríamos optar por eliminar el registro, o no tenerlo en cuenta para este estudio dado que corresponde a una sola observación entre 17588, pero estaríamos perdiendo información relevante de este jugador. Por ello, considero más práctico inferir la media de la población, asumiendo el riesgo de introducir un dato por criterios estadísticos, que no se corresponderá con la realidad.
+La variable **Contract_Expiry**, aunque se encuentra en formato numérico, no debemos olvidar que corresponde a un año y por tanto, su naturaleza es ser parte de una fecha. Por otro lado, es una variable que cuenta con un valor desconocido, que nos obliga a tratarlo para poder realizar el estudio. Podríamos optar por eliminar el registro, o no tenerlo en cuenta para este estudio dado que corresponde a una sola observación entre 17588, pero estaríamos perdiendo información relevante de este jugador. Por ello, considero más práctico inferir la media de la población, asumiendo el riesgo de introducir un dato por criterios estadísticos, que no se corresponderá con la realidad.
 
 ```{r}
 fifa.df.sub[is.na(fifa.df.sub$Contract_Expiry)== TRUE, "Contract_Expiry"] = 
@@ -546,15 +560,59 @@ round(mean(fifa.df.sub[is.na(fifa.df.sub$Contract_Expiry)== FALSE, "Contract_Exp
 quantitative_study <- function(df, col_names) {
   media <- as.data.frame(lapply(df[, col_names], mean)) %>% mutate(estimator=c("media"))
   mediana <- as.data.frame(lapply(df[, col_names], median)) %>% mutate(estimator=c("mediana"))
-  return(merge(media, mediana, all=TRUE))
+  winsor_media <- as.data.frame(lapply(df[, col_names], winsor.mean)) %>% mutate(estimator=c("winsor_media"))
+  df_out <- merge(media, mediana, all=TRUE)
+  df_out <- merge(df_out, winsor_media, all=TRUE)
+  return(df_out)
 }
   
-
-```
-
-```{}
+print(quantitative_study(fifa.df.sub, col_names))
 ```
 
 # Análisis de Componentes Principales (ACP)
+
+En este capítulo vamos a realizar un análisis de componentes principales (PCA en inglés) sobre las variables "Rating", "Height", "Weight" y "Age". Aunque primeramente vamos a mirar la matriz de correlaciones, dado que para que la ACP sea efectiva, tiene que existir un alto grado de correlación entre las variables.
+
+```{r}
+cor(fifa.df.sub[, col_names])
+```
+
+Las dos únicas variables correlacionadas directamente son Altura y Peso.
+
+Antes de lanzar el análisis de PCA hemos de pensar que la matriz de datos está formada por variables con diferentes magnitudes y rangos. Por ello, vamos a utilizar la matriz de correlaciones que transformará las variables en estandarizadas de media cero y desviación típica uno.
+
+Lancemos el análisis y estudiemos su resultado.
+
+```{r}
+col_names <- c( "Rating", "Height", "Weight", "Age")
+fifa.pca <- prcomp(fifa.df.sub[, col_names], center = TRUE, scale. = TRUE)
+summary(fifa.pca)
+```
+Vemos que la proporción de varianza no proporciona buenos resultados. Como hemos visto anteriormente, la correlación entre las variables era escasa.
+
+Veamos los vectores propios.
+
+```{r}
+fifa.pca$rotation
+```
+Para saber que componentes utilizar, vamos a verlo visualmente.
+
+```{r}
+fifa_biplot_chart <- function(x, y){
+  ggbiplot(fifa.pca, choices = x:y, obs.scale = 1, var.scale = 1,
+         groups= as.factor(col_names)) +
+  scale_color_discrete(name ='') + 
+  theme(legend.direction = 'horizontal', legend.position = 'top')
+}
+
+par(mfrow= c(2,2))
+
+for(i in 1:3) {
+  print(i)
+  fifa_biplot_chart(i,i+1)      
+  }
+
+```
+
 
 # Archivo final
