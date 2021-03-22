@@ -585,10 +585,10 @@ Lancemos el análisis y estudiemos su resultado.
 
 ```{r}
 col_names <- c( "Rating", "Height", "Weight", "Age")
-fifa.pca <- prcomp(fifa.df.sub[, col_names], center = TRUE, scale. = TRUE)
+fifa.pca <- prcomp(na.omit(fifa.df.sub[, col_names]), center = TRUE, scale. = TRUE)
 summary(fifa.pca)
 ```
-Vemos que la proporción de varianza no proporciona buenos resultados. Como hemos visto anteriormente, la correlación entre las variables era escasa.
+Vemos que la proporción de varianza no proporciona buenos resultados. Como hemos visto anteriormente, la correlación entre las variables era escasa. No obstante, fijándonos en la varianza acumulada podemos observar que con los dos primeros componentes podemos representar el 80,8% del modelo.
 
 Veamos los vectores propios.
 
@@ -599,20 +599,27 @@ Para saber que componentes utilizar, vamos a verlo visualmente.
 
 ```{r}
 fifa_biplot_chart <- function(x, y){
-  ggbiplot(fifa.pca, choices = x:y, obs.scale = 1, var.scale = 1,
-         groups= as.factor(col_names)) +
-  scale_color_discrete(name ='') + 
-  theme(legend.direction = 'horizontal', legend.position = 'top')
+  ggbiplot(fifa.pca, choices = x:y, obs.scale = 1, var.scale = 1, 
+           pc.biplot =TRUE, labels.size = 3, var.axes = TRUE, 
+           varname.size=5) 
+  + ggtitle("Análisis de componentes principales")
+  
 }
 
 par(mfrow= c(2,2))
 
 for(i in 1:3) {
-  print(i)
-  fifa_biplot_chart(i,i+1)      
+  print(fifa_biplot_chart(i,i+1))
   }
 
 ```
+Del examen del primer gráfico, que representa a las dos primeras componentes, podemos observar lo siguiente:
+- 1. Con la primera componente se explicaría el 47,4% de la varianza, siendo la que más contribuye al modelo. 
+- 2. Podemos observar también, una proximidad entre el par de variables Weight y Height, por un lado, y Rating y Age por el otro. Una mayor proximidad indica un alto grado de correlación entre las variables, algo que ya habíamos visto al examinar la matriz de correlación. 
+- 3. La longitud de las flechas indican la importancia que tienen las variables originales en las componentes.
+
+Por último, encontramos un punto residual fuera de la nube de puntos, que se repite en los tres gráficos de componentes. Este punto, podría ser clasificado como outlier y sacado fuera del modelo de datos. Vamos a ver los valores de las variables para este punto.
+
 
 
 # Archivo final
