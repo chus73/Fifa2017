@@ -3,18 +3,18 @@ title: "Preprocesado de datos del Fifa 2017"
 author: "Jesús González"
 date: "25/3/2021"
 output:
-  pdf_document:
-    toc: yes
-    toc_depth: '2'
-    highlight: zenburn
-    
   html_document:
     toc: yes
     toc_float: yes
     toc_depth: 2
-    number_sections: yes
+    number_sections: no
     theme: paper
     highlight: default
+  pdf_document:
+    
+    toc: yes
+    toc_depth: '2'
+    highlight: zenburn
 ---
 
 ```{r setup, include=FALSE}
@@ -480,7 +480,7 @@ lineal.model
 
 A modo de prueba podemos observar que el coeficiente es positivo (0.73), lo que indicaría que peso y altura se relacionan directamente, a más peso, más altura, aunque en la vida real encontramos casos en los que esta relación directa no siempre se cumple, son casos particulares, y como regla general esta relación es perfectamente válida.
 
-La métrica de R\^2, cuyo rango va de 0 a 1, nos determinará cuanto de bien se ajusta nuestro modelo a los datos. La bonanza del modelo nos lo determina la proximidad a 1 del resultado. En este caso es ligeramente superior a 0.5, lo cual nos indica un pobre ajuste de nuestro modelo.
+La métrica de $$R^2$$, cuyo rango va de 0 a 1, nos determinará cuanto de bien se ajusta nuestro modelo a los datos. La bonanza del modelo nos lo determina la proximidad a 1 del resultado. En este caso es ligeramente superior a 0.5, lo cual nos indica un pobre ajuste de nuestro modelo.
 
 ```{r}
 summary(lineal.model)$r.squared
@@ -580,18 +580,44 @@ Montaremos una tabla con las medidas de tendencia central y de dispersión.
 
 ```{r}
 quantitative_study <- function(df, col_names) {
-  media <- as.data.frame(lapply(df[, col_names], mean)) %>% mutate(estimator=c("media"))
-  mediana <- as.data.frame(lapply(df[, col_names], median)) %>% mutate(estimator=c("mediana"))
-  winsor_media <- as.data.frame(lapply(df[, col_names], winsor.mean)) %>% mutate(estimator=c("winsor_media"))
+  media <- as.data.frame(lapply(df[, col_names], mean)) %>% 
+    round(digits = 2)  %>% mutate(estimator=c("media")) 
+  
+  mediana <- as.data.frame(lapply(df[, col_names], median)) %>% 
+    round(digits = 2)  %>% mutate(estimator=c("mediana"))
+  
+  media_rec <- as.data.frame(lapply(df[, col_names], mean, trim=0.05)) %>% 
+    round(digits = 2)  %>% mutate(estimator=c("media recortada"))
+  
+  winsor_media <- as.data.frame(lapply(df[, col_names], winsor.mean)) %>% 
+    round(digits = 2)  %>% mutate(estimator=c("winsor_media"))
+  
+  desv_est <- as.data.frame(lapply(df[, col_names], sd)) %>% 
+    round(digits = 2)  %>% mutate(estimator=c("desviación estándar"))
+  
+  RIC <- as.data.frame(lapply(df[, col_names], IQR)) %>% 
+    round(digits = 2)  %>% mutate(estimator=c("RIC"))
+  
+  DAM <- as.data.frame(lapply(df[, col_names], mad)) %>% 
+    round(digits = 2)  %>%  mutate(estimator=c("DAM"))
+  
   df_out <- merge(media, mediana, all=TRUE)
+  df_out <- merge(df_out, media_rec, all=TRUE)
   df_out <- merge(df_out, winsor_media, all=TRUE)
+  df_out <- merge(df_out, desv_est, all=TRUE)
+  df_out <- merge(df_out, RIC, all=TRUE)
+  df_out <- merge(df_out, DAM, all=TRUE)
   return(df_out)
 }
   
 print(quantitative_study(fifa.df.sub, col_names))
 ```
 
-# Análisis de Componentes Principales (ACP)
+Si tomamos como "baseline" **la mediana**, al ser una medida de tendencia central robusta, podemos compararla con el resto de medidas de tendencia. A priori, podríamos pensar que como **la media** es una medida de tendencia central que se ve influida por los extremos, éstos están escorando ligeramente la tendencia alejándola del centro de la serie. No obstante, si comparamos con **la media recortada** (también llamada media truncada), en la que se han eliminado **un 5% de los valores extremos**, vemos que efectivamente los la serie tiene un ligero desvío hacia la derecha (hacia un mayor valor). Esto se puede acabar de confirmar con **la media winsorizada**, medida robusta que nos muestra unos valores similares a los anteriores.
+
+En cuanto a **la desviación**, se obtiene una menor dispersión de los valores utilizando como base para su cálculo la media que no la mediana. Al haber visto que los extremos no tienen una gran influencia en la serie, podríamos tomar como buena la medida de **la desviación estándar**, aunque la **DAM** sea una medida de dispersión más robusta.
+
+# 9. Análisis de Componentes Principales (ACP)
 
 En este capítulo vamos a realizar un análisis de componentes principales (PCA en inglés) sobre las variables "**Rating**", "**Height**", "**Weight**" y "**Age**". Aunque primeramente vamos a mirar la matriz de correlaciones, dado que para que la ACP sea efectiva, tiene que existir un alto grado de correlación entre las variables.
 
