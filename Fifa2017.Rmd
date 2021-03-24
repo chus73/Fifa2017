@@ -277,6 +277,8 @@ summary(fifa.df.sub$Weight)[c(1, 6)]
 
 # 4. Normalización de los datos caulitativos
 
+En este apartado vamos a inspeccionar y normalizar los datos cualitativos.
+
 ## 4.1 Name y Nationality
 
 Si examinamos la variable *Name*, podemos comprobar que algunos de sus valores presentan espacios en blanco. Además de no tener una uniformidad con respecto al uso de mayúsculas, tal y como podemos ver a continuación.
@@ -340,6 +342,8 @@ Encontrando las [9 posibles combinaciones válidas para esta variable]{.ul}.
 
 # 5 Posibles inconsistencias y variables tipo fecha
 
+En el quinto apartado vamos a tratar las variables de tipo fecha, transformándolas a este tipo cuando no lo estén. Es importante notar que las fechas vienen configuradas con el formato mes/día/año.
+
 ## 5.1 Club_Joining
 
 La variable *Club_Joining* tiene que estar dentro del rango: 1990 a 2017. Al examinarla, vemos que el tipo de datos es literal.
@@ -351,7 +355,7 @@ str(fifa.df.sub$Club_Joining)
 Así que el siguiente paso será transformar su tipo a fecha, tal y como le corresponde.
 
 ```{r}
-fifa.df.sub$Club_Joining = dmy( fifa.df.sub[, "Club_Joining"])
+fifa.df.sub$Club_Joining = mdy( fifa.df.sub[, "Club_Joining"])
 str(fifa.df.sub[, "Club_Joining"])
 ```
 
@@ -384,7 +388,7 @@ Vamos a verificar que la variable *Age*, a fecha 01/01/2017 tiene su corresponde
 
 ```{r}
 str(fifa.df.sub$Birth_Date)
-fifa.df.sub$Birth_Date <- dmy(fifa.df.sub$Birth_Date)
+fifa.df.sub$Birth_Date <- mdy(fifa.df.sub$Birth_Date)
 
 str(fifa.df.sub$Birth_Date)
 ```
