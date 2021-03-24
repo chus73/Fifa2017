@@ -41,6 +41,12 @@ library(ggbiplot)
 
 ```
 
+# Introducción
+
+Esta actividad se centra en la etapa de preprocesado necesario para preparar los datos para su posterior análisis. Para ello, se detectan y se corrigen posibles errores, inconsistencias y valores perdidos. Se presenta, además, una breve estadística descriptiva y se realizará un análisis de componentes principales (PCA) con algunas de las variables cuantitativas.
+
+El fichero de datos utilizado contiene el estilo de juego del videojuego de consola Fifa 2017, así como estadísticas reales de los jugadores de fútbol. El conjunto de datos está formado por algo más de 17500 registros y 53 variables, de las cuales se han escogido una selección para este trabajo.
+
 # 1. Carga del archivo
 
 ```{r}
@@ -692,3 +698,13 @@ Podemos ver que es un punto en el que tanto las variables peso como la altura mu
 
 
 # Archivo final
+
+# Conclusión
+
+A lo largo de esta actividad se ha puesto en práctica las técnicas de verificación y normalización de variables. Además, se ha buscado inconsistencia en los datos y se ha enriquecido la información tratando los valores perdido. 
+
+Se ha dedicado un capítulo a la observación de los valores extremos, detectándolos y eligiendo la mejor opción según el contexto de los datos.
+
+Se han calculado algunas medidas de tendencia central y dispersión, enfrentándolas entre ellas para obtener un avance del análisis descriptivo.
+
+Por último, se ha realizado un análisis de componentes principales con algunas de las variables cuantitativas, con el resultado de que no se ha encontrado una medida de varianza suficientemente alta como para determinar la eliminación de algún componente principal.
