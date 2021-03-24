@@ -1,14 +1,20 @@
 ---
 title: "Preprocesado de datos del Fifa 2017"
 author: "Jesús González"
-date: "8/3/2021"
-output: 
+date: "25/3/2021"
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
+    highlight: zenburn
+    
   html_document:
-    toc: true
-    toc_float: true
+    toc: yes
+    toc_float: yes
     toc_depth: 2
-    number_sections: true
+    number_sections: yes
     theme: paper
+    highlight: default
 ---
 
 ```{r setup, include=FALSE}
@@ -35,7 +41,7 @@ library(ggbiplot)
 
 ```
 
-# Carga del archivo
+# 1. Carga del archivo
 
 ```{r}
 fifa.df <- read.csv(file="fifa_raw.csv", encoding = "UTF-8")
@@ -50,7 +56,7 @@ fifa.df.sub <- fifa.df[, col_names]
 paste0("Número de observaciones: ", nrow(fifa.df.sub),". Número de variables: ", ncol(fifa.df.sub))
 ```
 
-Se ha pasado de 54 variables a 11, manteniendo el número de observaciones. A continuación se muestran las 5 primeras observaciones de la muestra.
+Se ha pasado de 54 variables a 12, manteniendo el número de observaciones. A continuación se muestran las 5 primeras observaciones de la muestra.
 
 ```{r message=TRUE}
 head(fifa.df.sub,5)
@@ -62,19 +68,19 @@ Vamos a examinar cada una de las variables.
 summary(fifa.df.sub)
 ```
 
-De la observación de las características de las variables y de las cinco primera observaciones podemos ver los siguiente:
+De la observación de las características de las variables y de las cinco primera observaciones podemos ver lo siguiente:
 
-1.  Contract_Expiry: Presenta como mínimo un valor NA.
+1.  **Contract_Expiry**: Presenta como mínimo un valor NA.
 
-2.  Preffered_Foot: Contiene valores 1,2 que se tendrán que traducir en Left y Right respectivamente.
+2.  **Preffered_Foot**: Contiene valores 1,2 que se tendrán que traducir en Left y Right respectivamente.
 
-3.  En las variables numéricas, a excepción de la anterior en la que carece de sentido, la media y la mediana tienen valores similares, que indica poca presencia de Outliers.
+3.  En las variables numéricas, a excepción de la anterior en la que carece de sentido, la media y la mediana tienen valores similares. Ésto indica que los valores extremos de la serie no tienen un gran impacto sobre la misma, al no mover la media de su posición central.
 
-4.  Las variables Height and Weight presentan valores NA que tendrán que ser tratados.
+4.  Las variables **Height** y **Weight** presentan valores NA que tendrán que ser tratados con posterioridad. Además el tipo de estas variables es literal, por lo que tendrán que ser tratadas para su conversión a numéricas enteras.
 
-# Verificar la duplicación de registros
+# 2. Verificar la duplicación de registros
 
-En esta sección se realizará la comprobación de existencia de observaciones duplicadas en la muestra. Para ello, primeramente vamos a comprobar si el campo "ID" se encuentra duplicado mediante la comparación de la longitud del vector antes y después de aplicar la función de eliminación de duplicados.
+En esta sección se realizará la comprobación de existencia de observaciones duplicadas en la muestra. Para ello, primeramente vamos a comprobar si existen valores duplicados en el campo *"ID"*, mediante la comparación de la longitud del vector antes y después de aplicar la función de eliminación de duplicados.
 
 ```{r}
 if (length(fifa.df.sub$ID) == length(unique(fifa.df.sub$ID))) {
@@ -85,14 +91,15 @@ No obstante, esto no nos garantiza que no existan jugadores duplicados, dado que
 
 ```{r}
 if (length(unique(fifa.df.sub$Name)) != nrow(fifa.df.sub)){
-  paste("Tenemos", (nrow(fifa.df.sub) - length(unique(fifa.df.sub$Name))), "posibles registros duplicados.")
+  paste("Tenemos", (nrow(fifa.df.sub) - length(unique(fifa.df.sub$Name))), 
+        "posibles registros duplicados.")
 }
 ```
 
 Vamos a mostrar algunos de los duplicados.
 
 ```{r}
-head(fifa.df.sub[duplicated(fifa.df.sub$Name),], 10)
+head(fifa.df.sub[duplicated(fifa.df.sub$Name),], 5)
 
 ```
 
@@ -102,7 +109,7 @@ Si escogemos uno aleatóriamente, por ejemplo el jugador "Fernando".
 fifa.df.sub[fifa.df.sub$Name == "Fernando",]
 ```
 
-Podemos ver comparando el resto de variables que muestra a tres jugadores diferentes. Como es lógico pensar que Fernando es un nombre común, vamos a probar con otro como "Lisandro López".
+Podemos ver comparando el resto de variables que muestra a tres jugadores diferentes. **Como es lógico pensar** que Fernando es un nombre común, vamos a probar con otro como "Lisandro López".
 
 ```{r}
 fifa.df.sub[fifa.df.sub$Name == "Lisandro López",]
@@ -110,13 +117,13 @@ fifa.df.sub[fifa.df.sub$Name == "Lisandro López",]
 
 Viendo por el resultado, que también estamos hablando de dos jugadores con variables diferentes.
 
-Tras lo visto, y viendo que la calidad del dato es bastante pobre, no podemos confirmar que [existan observaciones duplicadas en la muestra]{.ul}.
+Tras lo visto, y viendo que la calidad del dato es bastante pobre, [no podemos confirmar que existan observaciones duplicadas en la muestra]{.ul}.
 
-# Normalización de los datos cuantitativos
+# 3. Normalización de los datos cuantitativos
 
 En este apartado se va a realizar la normalización de la variables cuantitativas con objeto de uniformizar su formato.
 
-## Rating
+## 3.1 Rating
 
 La variable numérica *rating*, incluye la valoración del jugador dentro de un rango entre 0 y 100. Un vistazo a sus valores máximos y mínimo nos puede mostrar si están dentro del rango esperado.
 
@@ -125,11 +132,11 @@ str(fifa.df.sub$Rating)
 summary(fifa.df.sub$Rating)[c(1,6)]
 ```
 
-Viendo que todos sus valores se encuentran dentro del intervalo correcto.
+Viendo que [todos sus valores se encuentran dentro del intervalo correcto]{.ul}.
 
-## Height
+## 3.2 Height
 
-La variable que muestra la altura de los jugadores, height, debe de estar en cm con un formato de 3 dígitos sin decimales.
+La variable que muestra la altura de los jugadores, *height*, debe de estar en cm **con un formato de 3 dígitos sin decimales**. Vamos a explorar como viene el dato en esta variable.
 
 ```{r}
 head(fifa.df.sub$Height,20)
@@ -141,7 +148,7 @@ Además, tenemos que tener especial cuidado debido a que las medidas en metros, 
 fifa.df[29,c("Name", "Height")]
 ```
 
-Vemos que hay observaciones con medidas en centímetros, y otras en metros. Eliminaremos la unidad que aparece al final
+Vemos que hay observaciones con medidas en **centímetros**, y otras en **metros**. Eliminaremos la unidad que aparece al final
 
 ```{r}
 fifa.df.sub$Height <- str_replace_all(fifa.df.sub$Height, "[cm]", "")
@@ -158,10 +165,10 @@ head(fifa.df.sub$Height, 20)
 Como paso de comprobación, vamos a ver si existe alguna medida cuya longitud sea superior a 3 dígitos.
 
 ```{r}
-tail(fifa.df.sub[nchar(fifa.df.sub$Height)>3, c("Height")])
+(fifa.df.sub[nchar(fifa.df.sub$Height) > 3, c("Height")])
 ```
 
-Apareciendo los NA que trataremos más adelante.
+Apareciendo los NA que trataremos más adelante, verificando que no existe ninguna observación mayor de 3 dígitos después de la transformación de la variable.
 
 El siguiente paso será transformar la medida a numérico.
 
@@ -177,11 +184,13 @@ fifa.df.sub$Height <- ifelse(nchar(fifa.df.sub$Height) == 1, fifa.df.sub$Height*
 
 ```
 
+Como paso de verificación, vamos a revisar la observación con formato problemático detectada anteriormente.
+
 ```{r}
 fifa.df.sub[29, c("Name", "Height")]
 ```
 
-## Weight
+## 3.3 Weight
 
 La última variable numérica muestra el peso de los jugadores y debe de estar **expresada en kg,** **sin decimales**. Los pasos son similares a la variable Height. Esta vez, vamos a realizar la transformación haciendo uso de pipes para concatenar pasos.
 
@@ -189,7 +198,9 @@ La última variable numérica muestra el peso de los jugadores y debe de estar *
 str(fifa.df.sub$Weight)
 ```
 
-De la observación de los primeros registro, podemos ver que la variable se encuentra en formato de string, y que contiene la unidad de medida kg o gramos. Los valores están expresados con tres decimales que deberemos de reducir a dos. Además, en las observaciones dadas en kg, podemos encontrar que el separador decimal es el punto o bien la coma.
+De la observación de los primeros registro, podemos ver que la variable se encuentra en formato de string, y que contiene la unidad de medida kg o gramos. Algunos valores están expresados con tres decimales que deberemos eliminar, truncando la expresión para quedarnos con la parte entera. 
+
+Además, en las observaciones dadas en kg, podemos encontrar que el separador decimal es el punto o bien la coma.
 
 Primeramente vamos a diferenciar las medidas de gramos del resto, para poder operar con ellas posteriormente.
 
@@ -201,15 +212,13 @@ Primeramente vamos a diferenciar las medidas de gramos del resto, para poder ope
 
 A continuación vamos a realizar los siguientes pasos encadenados:
 
-1.  Eliminación de la unidad en la variable Weight.
+1.  Eliminación de la unidad y de los separadores decimales en la variable *Weight*.
 
 2.  Eliminación de los espacios en blanco en cada observación de la variable.
 
-3.  Sustitución de las comas por los puntos como separadores decimales.
+3.  Conversión de la variable en Numérica.
 
-4.  Conversión de la variable en Numérica.
-
-5.  Añadir el resultado en una nueva columna, "Weight2", que nos permitirá poder comparar con la columna original.
+4.  Añadir el resultado como paso temporal en una nueva columna "*Weight2*", que nos permitirá poder comparar con la columna original.
 
 ```{r}
   fifa.df.sub$Weight2 <-   
@@ -219,11 +228,8 @@ A continuación vamos a realizar los siguientes pasos encadenados:
     as.numeric()
 ```
 
-```{r message=TRUE}
-fifa.df.sub[1:10, c("Weight", "Weight_Unit", "Weight2")]
-```
 
-El siguiente paso es utilizar la columna Weight_Unit para convertir los valores en gramos a kilos.
+El siguiente paso es utilizar la columna *Weight_Unit* para convertir los valores de gramos a kilos. Adicionalmente, aprovechamos para quedarnos con la parte entera del resultado.
 
 ```{r}
 gr_to_kg <- function(value, unit){
@@ -246,27 +252,35 @@ for(i in 1:nrow(fifa.df.sub)){
 
 Para finalizar, borramos las columnas que ya no nos sirven.
 
-A modo de comprobación, nos fijamos en los valores extremos de la serie y en el formato que nos devuelve.
-
 ```{r}
 fifa.df.sub <- subset(fifa.df.sub, select = -c(Weight, Weight_Unit))
 names(fifa.df.sub)[names(fifa.df.sub) == 'Weight2'] <- 'Weight'
-#fifa.df.sub <- fifa.df.sub %>% rename(Weight = Weight2)
-summary(fifa.df.sub$Weight)
 ```
 
-# Normalización de los datos caulitativos
+Y revisamos el resultado.
 
-## Name y Nationality
+```{r message=TRUE}
+fifa.df.sub[1:10, c("Name", "Weight")]
+```
 
-Si examinamos la variable Name, podemos comprobar que algunos de sus valores presentan espacios en blanco. Además de no tener una uniformidad con respecto al uso de mayúsculas, tal y como podemos ver a continuación.
+A modo de comprobación, nos fijamos en los valores extremos de la serie y en el formato que nos devuelve.
+
+```{r}
+summary(fifa.df.sub$Weight)[c(1, 6)]
+```
+
+# 4. Normalización de los datos caulitativos
+
+## 4.1 Name y Nationality
+
+Si examinamos la variable *Name*, podemos comprobar que algunos de sus valores presentan espacios en blanco. Además de no tener una uniformidad con respecto al uso de mayúsculas, tal y como podemos ver a continuación.
 
 ```{r}
 filas <- c(314, 973, 998, 794)
-fifa.df.sub[filas, "Name"]
+fifa.df.sub[filas, c("Name", "Nationality")]
 ```
 
-Aplicamos la limpieza y normalización al campo Name y al Nacionality.
+Aplicamos la limpieza y normalización al campo *Name* y al *Nacionality*, verificando el resultado.
 
 ```{r}
 fifa.df.sub$Name <- fifa.df.sub$Name %>% trimws() %>% str_to_title()
@@ -274,7 +288,7 @@ fifa.df.sub$Nationality <- fifa.df.sub$Nationality %>% trimws() %>% str_to_title
 fifa.df.sub[filas, c("Name", "Nationality")]
 ```
 
-## Preffered_Foot
+## 4.2 Preffered_Foot
 
 La variable preffered_foot contiene dos identificadores numéricos que tienen la siguiente correspondencia:
 
@@ -282,18 +296,21 @@ La variable preffered_foot contiene dos identificadores numéricos que tienen la
 
 -   2 -\> Right
 
-Vamos a realizar una transformación de la variable a tipo factor con los atributos descritos.
-
 ```{r}
 str(fifa.df.sub$Preffered_Foot)
+```
+
+Vamos a realizar una transformación de la variable [a tipo factor]{.ul} con los atributos descritos.
+
+```{r}
 fifa.df.sub$Preffered_Foot <- factor(fifa.df.sub$Preffered_Foot)
 levels(fifa.df.sub$Preffered_Foot) <- c("Left", "Right")
 str(fifa.df.sub$Preffered_Foot)
 ```
 
-## Work_Rate
+## 4.3 Work_Rate
 
-Examinamos la variable Work_Rate. Como se puede observar a continuación, muestra dos valores de tipo string, el primer valor como la valoración cualitativa en ataque y el segundo en defensa.
+Siguiendo la línea de este estudio, primeramente vamos a examinar la variable *Work_Rate*. Como se puede observar a continuación, muestra dos valores de tipo string, el primer valor como la valoración cualitativa en ataque y el segundo en defensa.
 
 ```{r}
 unique(fifa.df.sub$Work_Rate)
@@ -304,33 +321,30 @@ De la observación de los valores que presenta la variable, podemos ver que no h
 ```{r}
 fifa.df.sub[fifa.df.sub$Work_Rate == 'Med / Med', 'Work_Rate'] = 'Medium / Medium'
 fifa.df.sub[fifa.df.sub$Work_Rate == 'Hig / Med', 'Work_Rate'] = 'High / Medium'
-summary(fifa.df.sub$Work_Rate)
+
 ```
 
-Una vez obtenidas las nueve combinaciones válidas, podemos transformar la variable a factor.
+El siguiente paso será transformar la variable a factor.
 
 ```{r}
 fifa.df.sub$Work_Rate = factor(fifa.df.sub$Work_Rate)
 levels(fifa.df.sub$Work_Rate)
 ```
-Encontrando las 9 posibles combinaciones para esta variable.
+Encontrando las [9 posibles combinaciones válidas para esta variable]{.ul}.
 
-# Posibles inconsistencias y variables tipo fecha
+# 5 Posibles inconsistencias y variables tipo fecha
 
-## Club_Joining
+## 5.1 Club_Joining
 
-La variable Club_Joining tiene que estar dentro del rango: 1990 a 2017. Al examinarla, vemos que el tipo de datos es literal.
+La variable *Club_Joining* tiene que estar dentro del rango: 1990 a 2017. Al examinarla, vemos que el tipo de datos es literal.
 
 ```{r}
 str(fifa.df.sub$Club_Joining)
-
-
 ```
 
 Así que el siguiente paso será transformar su tipo a fecha, tal y como le corresponde.
 
 ```{r}
-str(fifa.df.sub[, "Club_Joining"])
 fifa.df.sub$Club_Joining = dmy( fifa.df.sub[, "Club_Joining"])
 str(fifa.df.sub[, "Club_Joining"])
 ```
@@ -343,9 +357,9 @@ summary(fifa.df.sub[year(fifa.df.sub$Club_Joining) <= 1990 || year(fifa.df.sub$C
 
 Viendo que todas las fechas se encuentran dentro del rango.
 
-## Contract_Expiry \>= Club_Joining?
+## 5.2 Contract_Expiry \>= Club_Joining?
 
-En este apartado, vamos a mirar si se cumple **la regla de integridad** de que no exista ningún jugador cuyo año de expiración de contrato sea inferior al año de inicio del contrato. Lo ideal hubiera sido poder comparar a nivel de fechas, pero en nuestro caso, la variable *Contract_Expiry* **sólo recoge el año**. De todas maneras, teniendo en cuenta que los jugadores son renovados por temporadas, la afectación de no bajar a máxima granularidad no tiene que ser importante.
+En este apartado, vamos a mirar si se cumple **la regla de integridad** de que no exista ningún jugador cuyo año de expiración de contrato sea inferior al año de inicio del contrato. Lo ideal hubiera sido poder comparar a nivel de fechas, pero en nuestro caso, la variable *Contract_Expiry* **sólo recoge el año**. De todas maneras, teniendo en cuenta que los jugadores son renovados por temporadas, la afectación al no bajar a máxima granularidad no tiene que ser importante.
 
 ```{r}
 nrow(na.omit(fifa.df.sub[fifa.df.sub$Contract_Expiry < year(fifa.df.sub$Club_Joining), c("Club_Joining", "Contract_Expiry")]))
@@ -356,10 +370,11 @@ No encontrándose ningún caso. Lo que si que encontramos es un registro con val
 ```{r}
 fifa.df.sub[is.na(fifa.df.sub$Contract_Expiry)== TRUE, ]
 ```
+En este caso concreto, y viendo que tampoco tenemos la fecha de contrato del club, se puede eliminar el registro o inferir la media de la serie.
 
-## Revisar si la edad corresponde a la fecha de nacimiento
+## 5.3 Revisar si la edad corresponde a la fecha de nacimiento
 
-Vamos a verificar que la variable Age, a fecha 01/01/2017 tiene su correspondencia con la que incorpora el registro en la variable Birth_Date. Primero de todo, si examinamos esta última variable, encontramos que tenemos que realizar una transformación de tipo de datos de litaral a fecha (casting).
+Vamos a verificar que la variable *Age*, a fecha 01/01/2017 tiene su correspondencia con la que incorpora el registro en la variable *Birth_Date*. Primero de todo, si examinamos esta última variable, encontramos que tenemos que realizar una transformación de tipo de datos de literal a fecha (un casting de la variable).
 
 ```{r}
 str(fifa.df.sub$Birth_Date)
@@ -368,7 +383,7 @@ fifa.df.sub$Birth_Date <- dmy(fifa.df.sub$Birth_Date)
 str(fifa.df.sub$Birth_Date)
 ```
 
-Ahora que ya tenemos la variable en su formato correcto, podemos calcular la edad en el primer día del año 2017 y compararla con la almacenada.
+Ahora que ya tenemos la variable en su formato correcto, podemos calcular la edad**en el primer día del año 2017** y compararla con la almacenada.
 
 ```{r}
 current_date <- ymd(20170101)
@@ -384,13 +399,9 @@ head(na.omit(fifa.df.sub[fifa.df.sub$Calculated_Age!=fifa.df.sub$Age, c("Name", 
 paste("Número de registros con Edad diferente: ", nrow(na.omit(fifa.df.sub[fifa.df.sub$Calculated_Age!=fifa.df.sub$Age, c("Name", "Age", "Calculated_Age")])))
 ```
 
-Vamos a actualizar la variable Age con los valores calculados.
+Vamos a actualizar la variable *Age* con los valores calculados.
 
 ```{r}
-fifa.df.sub[1:10, c("Name", "Birth_Date", "Age", "Calculated_Age")]
-
-#fifa.df.sub$Age2 <-fifa.df.sub$Age
-#fifa.df.sub[fifa.df.sub$Calculated_Age!=fifa.df.sub$Age & !is.na(fifa.df.sub$Calculated_Age), "Age2"] = fifa.df.sub$Calculated_Age
 real_age <- function(age1, age2){
   if (age1 != age2 & !is.na(age2)) {
     return(age2)
@@ -404,48 +415,53 @@ for(i in 1:nrow(fifa.df.sub)){
 fifa.df.sub[1:10, c("Name", "Birth_Date", "Age", "Calculated_Age")]
 ```
 
-Ya hemos conseguido actualizar la variable Age con los valores calculados para aquellos casos en los que eran diferentes y existían valores. Es el momento de borrar la columna temporal Calculated_Age que nos ha servido para el cálculo.
+Ya hemos conseguido actualizar la variable *Age* con los valores calculados para aquellos casos en los que eran diferentes y existían valores. Es el momento de borrar la columna temporal *Calculated_Age* que nos ha servido para el cálculo.
 
 ```{r}
 fifa.df.sub <- select(fifa.df.sub, -Calculated_Age)
 ```
 
-# Valores atípicos
+# 6 Estudio de valores atípicos
 
-Vamos a revisar si existen valores atípicos para la variables Height.
+En este capítulo del análisis exploratorio, vamos a revisar si existen valores atípicos para la variables *Height* y *Weight*.
 
-
+## 6.1 Valores atípicos de *Height*
 ```{r}
 boxplot(fifa.df.sub$Height, main = "Height", color= "gray")
 ```
 
-Tanto el bloxplot de la variable Height, como de la Weight nos marcan valores fuera del 1.5 veces el rango intercuartílico, que podríamos considerar outliers (!). En concreto, si nos fijamos en la variable Height, podemos ver que corresponden a la siguiente lista.
+El bloxplot de la variable *Height*, nos marca valores fuera del 1.5 veces el rango intercuartílico. La pregunta que nos tendríamos que realizar, es si estos datos extremos los podemos considerar *outliers* o no. Examinemos la lista de valores.
 
 ```{r}
 boxplot.stats(fifa.df.sub$Height)$out %>% unique() %>% sort()
 summary(fifa.df.sub$Height)
 ```
 
-Aunque la media es una medida de tendencia central que se ve fuertemente influenciada por los valores extremos, en este caso, vemos que media y mediana prácticamente coinciden. Por esa razón, no parece indicado la eliminación de los valores extremos encontrados por el bloxplot.
+Aunque la media es una medida de tendencia central que se ve fuertemente influenciada por los valores extremos, en este caso, [vemos que media y mediana prácticamente coinciden]{.ul}. Por esa razón, no parece indicado la eliminación de los valores extremos encontrados por el bloxplot.
+
+## 6.2 Valores atípicos de *Weight*
 
 El paso siguiente será repetir la búsqueda de outliers para la variable Weight
 
 ```{r}
 boxplot(fifa.df.sub$Weight, main = "Weight", color= "gray")
 ```
+Como pasaba en la variable anterior, media y mediana se encuentran centradas, por lo que podemos afirmar que los valores extremos no influencian en exceso desvirtuando la tendencia de la serie.
+
+Vamos a ver los valores extremos en formato numérico.
 
 ```{r}
 boxplot.stats(fifa.df.sub$Weight)$out %>% unique() %>% sort()
 summary(fifa.df.sub$Weight)
 ```
 
-En este caso, la desviación entre media y mediana es también pequeño (menos de un 0.4 %), **no justificándose la eliminación** de los valores extremos de la serie numérica.
+En este caso, los valores extremos son perfectamente válidos y acordes con pesos de la vida real, y la desviación entre media y mediana es también pequeño (menos de un 0.4 %), **no justificándose la eliminación** de los valores extremos de la serie numérica.
 
-# Imputación de valores
+# 7. Imputación de valores
 
-En este capítulo vamos a inferir los valores desconocidos de las variables Height y Weight, a partir del valor conocido de una de ellas utilizando la regresión lineal.
+En este capítulo vamos a inferir los valores desconocidos de las variables *Height* y *Weight*, a partir del valor conocido de una de ellas utilizando para ello una regresión lineal.
 
-## Inferir Height a partir de Weight
+## 7.1. Inferir Height a partir de Weight
 
 Examinemos primero los valores desconocidos de la serie.
 
@@ -454,7 +470,7 @@ gamer_na_height <- fifa.df.sub[is.na(fifa.df.sub$Height) == TRUE, 'ID']
 fifa.df.sub[gamer_na_height, c("Name", "Height")]
 ```
 
-Para inferir los valores desconocidos, vamos a utilizar un modelo de regresión lineal, utilizando la variable peso como variable conocida.
+Generaremos el modelo de regresión lineal utilizando la variable peso como variable conocida para inferir la altura.
 
 ```{r}
 fmla <- fifa.df.sub$Height ~ fifa.df.sub$Weight
@@ -462,9 +478,9 @@ lineal.model <- lm(fmla, data = fifa.df.sub)
 lineal.model
 ```
 
-A modo de prueba podemos observar que el coeficiente es positivo (0.73), lo que indicaría que peso y altura se relacionan directamente, a más peso, más altura, aunque lo lógica nos dice que esto no siempre se cumple.
+A modo de prueba podemos observar que el coeficiente es positivo (0.73), lo que indicaría que peso y altura se relacionan directamente, a más peso, más altura, aunque en la vida real encontramos casos en los que esta relación directa no siempre se cumple, son casos particulares, y como regla general esta relación es perfectamente válida.
 
-La métrica de R\^2, cuyo rango va de 0 a 1, nos determinará cuanto de bien se ajusta nuestro modelo a los datos. La bonanza del modelo nos lo determina la proximidad a 1 del resultado. En este caso es ligeramente superior a 0.5, lo cual nos indica un pobre ajuste.
+La métrica de R\^2, cuyo rango va de 0 a 1, nos determinará cuanto de bien se ajusta nuestro modelo a los datos. La bonanza del modelo nos lo determina la proximidad a 1 del resultado. En este caso es ligeramente superior a 0.5, lo cual nos indica un pobre ajuste de nuestro modelo.
 
 ```{r}
 summary(lineal.model)$r.squared
@@ -481,7 +497,7 @@ ggplot(fifa.df.sub, aes(x = pred.Height, y = Height)) +
   ggtitle("Predicción del Peso del jugador")
 ```
 
-Examinamos el resultado de la predicción para los jugadores con valores de altura desconocidos. Hemos de aplicar el mismo formato numérico, sin decimales, que ya aplicamos en su momento a los valores originales.
+Examinamos el resultado de la predicción para los jugadores con valores de altura desconocidos. [Hemos de aplicar el mismo formato numérico] {.ul}, sin decimales, que ya aplicamos en su momento a los valores originales.
 
 ```{r}
 fifa.df.sub[is.na(fifa.df.sub$Height), c("Name", "Height", "pred.Height")]
@@ -494,13 +510,13 @@ fifa.df.sub[is.na(fifa.df.sub$Height), "Height"] <- trunc(fifa.df.sub[is.na(fifa
 paste("Número de filas con altura desconocida: ", nrow(fifa.df.sub[is.na(fifa.df.sub$Height),]))
 ```
 
-Mostramos los valores resultantes.
+Mostramos los valores resultantes tras finalizar el proceso.
 
 ```{r}
-
+fifa.df.sub[gamer_na_height, c("Name", "Height")]
 ```
 
-## Inferir Weight a partir de Height
+## 7.2. Inferir Weight a partir de Height
 
 A continuación, realizaremos la predicción del peso a partir de la altura del jugador, siguiendo el esquema utilizado en el apartado anterior. Previamente, vamos a registrar las observaciones afectadas.
 
@@ -526,7 +542,7 @@ El siguiente paso que daremos será actualizar la variable del peso del jugador 
 
 ```{r}
 fifa.df.sub[is.na(fifa.df.sub$Weight), "Weight"] <- trunc(fifa.df.sub[is.na(fifa.df.sub$Weight), "pred.Weight"])
-fifa.df.sub[gamer_na_weight, c("Name", "Weight", "pred.Weight")]
+fifa.df.sub[gamer_na_weight, c("Name", "Weight")]
 ```
 
 Como última comprobación, miraremos que las dos variables tratadas, Height y Weight, están libres de valores desconocidos, para finalmente, eliminar del modelo de datos las dos variables de predicción utilizadas y que ya no aportan nada al modelo.
@@ -537,24 +553,30 @@ paste("Número de filas con altura desconocida: ", nrow(fifa.df.sub[is.na(fifa.d
 fifa.df.sub[, c("pred.Weight", "pred.Height")] <- NULL
 ```
 
-# Estudio descriptivo de las variables cuantitativas
+## 7.3 Contract_Expiry
+
+La variable **Contract_Expiry** cuenta con un valor desconocido, que nos obliga a tratarlo para poder realizar el estudio. Tenemos varias opciones para ello:
+- 1. Podríamos optar por eliminar el registro, o no tenerlo en cuenta para este estudio dado que corresponde a una sola observación entre 17588, pero estaríamos perdiendo información relevante de este jugador. 
+- 2. Podríamos imputar el valor más repetido de la serie, pero podríamos incurrir en un sesgo.
+
+- 3. Considero más práctico inferir la media de la población, asumiendo el riesgo de introducir un dato por criterios estadísticos, que no se corresponderá con la realidad (sesgo).
+
+```{r}
+fifa.df.sub[is.na(fifa.df.sub$Contract_Expiry)== TRUE, "Contract_Expiry"] = 
+round(mean(fifa.df.sub[is.na(fifa.df.sub$Contract_Expiry)== FALSE, "Contract_Expiry"] ),0)
+```
+
+# 8. Estudio descriptivo de las variables cuantitativas
 
 En este capítulo, vamos a realizar el estudio de las variables cuantitativas visualizando sus medidas de tendencia centrales.
 
-```{}
-```
 
 ```{r}
 col_names <- c('Contract_Expiry', 'Rating', 'Height', 'Age', 'Weight')
 col_names
 ```
 
-La variable **Contract_Expiry**, aunque se encuentra en formato numérico, no debemos olvidar que corresponde a un año y por tanto, su naturaleza es ser parte de una fecha. Por otro lado, es una variable que cuenta con un valor desconocido, que nos obliga a tratarlo para poder realizar el estudio. Podríamos optar por eliminar el registro, o no tenerlo en cuenta para este estudio dado que corresponde a una sola observación entre 17588, pero estaríamos perdiendo información relevante de este jugador. Por ello, considero más práctico inferir la media de la población, asumiendo el riesgo de introducir un dato por criterios estadísticos, que no se corresponderá con la realidad.
-
-```{r}
-fifa.df.sub[is.na(fifa.df.sub$Contract_Expiry)== TRUE, "Contract_Expiry"] = 
-round(mean(fifa.df.sub[is.na(fifa.df.sub$Contract_Expiry)== FALSE, "Contract_Expiry"] ),0)
-```
+Montaremos una tabla con las medidas de tendencia central y de dispersión.
 
 ```{r}
 quantitative_study <- function(df, col_names) {
@@ -571,15 +593,15 @@ print(quantitative_study(fifa.df.sub, col_names))
 
 # Análisis de Componentes Principales (ACP)
 
-En este capítulo vamos a realizar un análisis de componentes principales (PCA en inglés) sobre las variables "Rating", "Height", "Weight" y "Age". Aunque primeramente vamos a mirar la matriz de correlaciones, dado que para que la ACP sea efectiva, tiene que existir un alto grado de correlación entre las variables.
+En este capítulo vamos a realizar un análisis de componentes principales (PCA en inglés) sobre las variables "**Rating**", "**Height**", "**Weight**" y "**Age**". Aunque primeramente vamos a mirar la matriz de correlaciones, dado que para que la ACP sea efectiva, tiene que existir un alto grado de correlación entre las variables.
 
 ```{r}
 cor(fifa.df.sub[, col_names])
 ```
 
-Las dos únicas variables correlacionadas directamente son Altura y Peso.
+Las dos únicas variables **correlacionadas** directamente son Altura y Peso.
 
-Antes de lanzar el análisis de PCA hemos de pensar que la matriz de datos está formada por variables con diferentes magnitudes y rangos. Por ello, vamos a utilizar la matriz de correlaciones que transformará las variables en estandarizadas de media cero y desviación típica uno.
+Antes de lanzar el análisis de PCA hemos de pensar que la matriz de datos está formada por [variables con diferentes magnitudes y rangos]{.ul}. Por ello, vamos a utilizar la matriz de correlaciones que transformará las variables en estandarizadas de media cero y desviación típica uno.
 
 Lancemos el análisis y estudiemos su resultado.
 
@@ -613,11 +635,14 @@ for(i in 1:3) {
 
 ```
 Del examen del primer gráfico, que representa a las dos primeras componentes, podemos observar lo siguiente:
-- 1. Con la primera componente se explicaría el 47,4% de la varianza, siendo la que más contribuye al modelo. 
-- 2. Podemos observar también, una proximidad entre el par de variables Weight y Height, por un lado, y Rating y Age por el otro. Una mayor proximidad indica un alto grado de correlación entre las variables, algo que ya habíamos visto al examinar la matriz de correlación. 
-- 3. La longitud de las flechas indican la importancia que tienen las variables originales en las componentes.
 
-Por último, encontramos un punto residual fuera de la nube de puntos, que se repite en los tres gráficos de componentes. Este punto, podría ser clasificado como outlier y sacado fuera del modelo de datos. 
+- Con la primera componente se explicaría el 47,4% de la varianza, siendo la que más contribuye al modelo. 
+
+- Podemos observar también, una proximidad entre el par de variables Weight y Height, por un lado, y **Rating** y **Age** por el otro. Una mayor proximidad indica un alto grado de correlación entre las variables, algo que ya habíamos visto al examinar la matriz de correlación. 
+
+- La longitud de las flechas indican la importancia que tienen las variables originales en las componentes.En todos los gráficos vemos que la longitud es similar, no destacando ninguna variable sobre el resto.
+
+Por último, encontramos [un punto residual fuera de la nube de puntos]{.ul}, que se repite en los tres gráficos de componentes. Este punto, podría ser clasificado como **outlier** y sacado fuera del modelo de datos, aunque para ello se tendría que valorar su valor respecto al contexto del análisis, cosa que veremos a continuación. 
 
 Veamos los valores de las variables para este punto. Primero encontramos la proyección para este punto, fijándonos que es el valor mínimo que toma PC1.
 
@@ -637,7 +662,7 @@ A continuación vamos a calcular la matriz original de valores a partir de la pr
 reverse_pca <- t(t(fifa.pca$x %*% t(fifa.pca$rotation))* fifa.pca$scale + fifa.pca$center)
 reverse_pca[pos,]
 ```
-Podemos ver que es un punto en el que tanto las variables peso como la altura muestran valores anormalmente altos.
+Podemos ver que es un punto en el que tanto las variables peso como la altura muestran valores anormalmente altos, pero perfectamente posibles. Así que podemos considerar que aunque este punto corresponde a un extremo de la serie, [no podemos considerarlo como outlier]{.ul}.
 
 
 # Archivo final
