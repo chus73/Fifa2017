@@ -148,10 +148,11 @@ La variable que muestra la altura de los jugadores, *height*, debe de estar en c
 head(fifa.df.sub$Height,20)
 ```
 
-Además, tenemos que tener especial cuidado debido a que las medidas en metros, no cumplen con una homegeneidad de formato, como se puede ver en el siguiente registro
+Además, tenemos que tener especial cuidado debido a que las medidas en metros, no cumplen con una homegeneidad de formato, como se puede ver en la siguiente selección de registros.
 
 ```{r}
-fifa.df[29,c("Name", "Height")]
+bad_height <- c(29, 76, 102, 172, 419 )
+fifa.df[bad_height,c("Name", "Height")]
 ```
 
 Vemos que hay observaciones con medidas en **centímetros**, y otras en **metros**. Eliminaremos la unidad que aparece al final
@@ -190,11 +191,13 @@ fifa.df.sub$Height <- ifelse(nchar(fifa.df.sub$Height) == 1, fifa.df.sub$Height*
 
 ```
 
-Como paso de verificación, vamos a revisar la observación con formato problemático detectada anteriormente.
+Como paso de verificación, vamos a revisar las observaciones con formato problemático detectadas anteriormente.
 
 ```{r}
-fifa.df.sub[29, c("Name", "Height")]
+fifa.df.sub[bad_height, c("Name", "Height")]
 ```
+
+Vemos que todas ellas se encuentran ya corregidas.
 
 ## 3.3 Weight
 
@@ -674,9 +677,13 @@ Del examen del primer gráfico, que representa a las dos primeras componentes, p
 
 - Con la primera componente se explicaría el 47,4% de la varianza, siendo la que más contribuye al modelo. 
 
-- Podemos observar también, una proximidad entre el par de variables Weight y Height, por un lado, y **Rating** y **Age** por el otro. Una mayor proximidad indica un alto grado de correlación entre las variables, algo que ya habíamos visto al examinar la matriz de correlación. 
+- La segunda componente contribuye con el 33,3 %. Así entre las dos componentes podemos explicar el 80,7% de la varianza.
 
-- La longitud de las flechas indican la importancia que tienen las variables originales en las componentes.En todos los gráficos vemos que la longitud es similar, no destacando ninguna variable sobre el resto.
+- El resto de componentes explican el 19,3% de la varianza acumulada. Si el objetivo es reducir la dimensionalidad del modelo, podríamos plantear el suprimir estos dos últimos componentes, teniendo un modelo con un grado aceptable de similitud al original. En todo caso, más adelante lo podremos ver visualmente.
+
+- Podemos observar también, una proximidad entre el par de variables **Weight** y **Height**, por un lado, y **Rating** y **Age** por el otro. Una mayor proximidad indica un alto grado de correlación entre las variables, algo que ya habíamos visto al examinar la matriz de correlación. En efecto, si comprobamos en la matriz de correlaciones, vemos que existe algo menos del 47 % de correlación entre estas dos últimas variables.
+
+- La longitud de las flechas indican la importancia que tienen las variables originales en las componentes.En todos los gráficos vemos que la longitud es similar, [no destacando ninguna variable sobre el resto]{.ul}.
 
 Por último, encontramos [un punto residual fuera de la nube de puntos]{.ul}, que se repite en los tres gráficos de componentes. Este punto, podría ser clasificado como **outlier** y sacado fuera del modelo de datos, aunque para ello se tendría que valorar su valor respecto al contexto del análisis, cosa que veremos a continuación. 
 
@@ -716,10 +723,20 @@ var_fifa %>%
   geom_line() +
   labs(title = "Scree plot: PCA on scaled data")
 ```
-Encontramos que con la primera componente, apenas se supera el 10 % de la varianza. Es por ello, que si no queremos bajar la fiabilidad del modelo, no podemos prescindir de ninguna de las componentes.
+Visualmente podemo ver como la pendiente de la recta se hace más acusada a partir de la segunda componente, quedando PC3 y PC4 como mínimos de la curva.
+
+*Agradecimientos a: https://datavizpyr.com/how-to-make-scree-plot-in-r-with-ggplot2/ por esta última parte.*
 
 
 # Archivo final
+
+En este trabajo hemos trabajado con un subset de datos del archivo original. En este punto, podríamos incluir a nuestro subset el resto de variables no tratadas. Al quedar fuera del ámbito de estudio y para mayor claridad en caso de examen, se considera que es mejor dejarlo reducido.
+
+Este trabajo está compuesto de los siguientes ficheros:
+
+- Fifa2017.Rmd con éste trabajo en Markdown y R.
+- Fifa2017.html, traducción del trabajo en formato html.
+- Fifa2017.pdf, fichero de texto pdf.
 
 # Conclusión
 
@@ -729,4 +746,4 @@ Se ha dedicado un capítulo a la observación de los valores extremos, detectán
 
 Se han calculado algunas medidas de tendencia central y dispersión, enfrentándolas entre ellas para obtener un avance del análisis descriptivo.
 
-Por último, se ha realizado un análisis de componentes principales con algunas de las variables cuantitativas, con el resultado de que no se ha encontrado una medida de varianza suficientemente alta como para determinar la eliminación de algún componente principal.
+Por último, se ha realizado un análisis de componentes principales con algunas de las variables cuantitativas, con el resultado de poder escoger la eliminación de los dos últimos componentes para quedarnos con un modelo equivalente con una varianza suficientemente alta. 
