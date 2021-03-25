@@ -3,6 +3,11 @@ title: "Preprocesado de datos del Fifa 2017"
 author: "Jesús González"
 date: "25/3/2021"
 output:
+  pdf_document:
+    
+    toc: yes
+    toc_depth: '2'
+    highlight: zenburn
   html_document:
     toc: yes
     toc_float: yes
@@ -10,11 +15,6 @@ output:
     number_sections: no
     theme: paper
     highlight: default
-  pdf_document:
-    
-    toc: yes
-    toc_depth: '2'
-    highlight: zenburn
 ---
 
 ```{r setup, include=FALSE}
@@ -730,13 +730,18 @@ Visualmente podemo ver como la pendiente de la recta se hace más acusada a part
 
 # Archivo final
 
-En este trabajo hemos trabajado con un subset de datos del archivo original. En este punto, podríamos incluir a nuestro subset el resto de variables no tratadas. Al quedar fuera del ámbito de estudio y para mayor claridad en caso de examen, se considera que es mejor dejarlo reducido.
+En este trabajo se ha utilizado con un subset de datos del archivo original que ha sido analizado y tratado. A continuación realizaremos la escritura del archivo en formato csv.
 
+```{r}
+file_name <- "fifa_clean.csv"
+write.csv(fifa.df.sub, file = file_name, sep=",", dec=".")
+```
 Este trabajo está compuesto de los siguientes ficheros:
 
 - Fifa2017.Rmd con éste trabajo en Markdown y R.
 - Fifa2017.html, traducción del trabajo en formato html.
 - Fifa2017.pdf, fichero de texto pdf.
+- Fifa_clean.csv, fichero con los datos procesados.
 
 # Conclusión
 
