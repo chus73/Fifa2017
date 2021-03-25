@@ -700,6 +700,24 @@ reverse_pca[pos,]
 ```
 Podemos ver que es un punto en el que tanto las variables peso como la altura muestran valores anormalmente altos, pero perfectamente posibles. Así que podemos considerar que aunque este punto corresponde a un extremo de la serie, [no podemos considerarlo como outlier]{.ul}.
 
+Como trabajo adicional, vamos a comprobar visualmente como se reparte la varianza entre los principales componentes. Calcularemos la varianza a partir de la desviación estándar calculada en los resultados de la PCA.
+
+```{r}
+var_fifa <- data.frame(PC = paste0("PC", 1:4), var_explained = (fifa.pca$sdev)^2 / sum(fifa.pca$sdev)^2)
+print(var_fifa)
+```
+
+Una vez visto los valores numéricos, vamos a visualizarlos en un Scree plot.
+
+```{r}
+var_fifa %>% 
+  ggplot(aes(x=PC, y= var_explained, group=1)) +
+  geom_point(size=3) + 
+  geom_line() +
+  labs(title = "Scree plot: PCA on scaled data")
+```
+Encontramos que con la primera componente, apenas se supera el 10 % de la varianza. Es por ello, que si no queremos bajar la fiabilidad del modelo, no podemos prescindir de ninguna de las componentes.
+
 
 # Archivo final
 
